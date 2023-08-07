@@ -1,24 +1,17 @@
 variable "aks_cluster_name" {
-    type = string
-    description = "AKS Cluster Name"
+  type        = string
+  description = "AKS Cluster Name"
 }
 
 variable "aks_cluster_location" {
-  type = string
-  default = "westeurope"
+  type        = string
+  default     = "westeurope"
   description = "Location where cluster will de deploy"
 }
 
 variable "aks_resource_group_name" {
-  type = string
-  description = "Resource group where cluster will de deploy"
-}
-
-variable "product_name" {
   type        = string
-  default     = ""
-  description = "The product which this resouce bellong and which will be used to identfy it."
-  nullable    = false
+  description = "Resource group where cluster will de deploy"
 }
 
 variable "agents_labels" {
@@ -150,7 +143,7 @@ variable "node_resource_group" {
 
 variable "agents_count" {
   type        = number
-  default     = 2
+  default     = null
   description = "The number of Agents that should exist in the Agent Pool. Please set `agents_count` `null` while `enable_auto_scaling` is `true` to avoid possible `agents_count` changes."
 }
 
@@ -220,6 +213,18 @@ variable "disk_encryption_set_id" {
   type        = string
   default     = null
   description = "(Optional) The ID of the Disk Encryption Set which should be used for the Nodes and Volumes. More information [can be found in the documentation](https://docs.microsoft.com/azure/aks/azure-disk-customer-managed-keys). Changing this forces a new resource to be created."
+}
+
+variable "key_vault_secrets_provider_enabled" {
+  type        = bool
+  default     = true
+  description = "The Azure Key Vault Provider for Secrets Store CSI Driver allows for the integration of an Azure key vault as a secret store with an Azure Kubernetes Service (AKS) cluster via a CSI volume."
+}
+
+variable "secret_rotation_interval" {
+  type        = string
+  default     = "2m"
+  description = "The interval to poll for secret rotation if key_vault_secrets_provider is enabled."
 }
 
 variable "oidc_issuer_enabled" {
@@ -756,4 +761,3 @@ variable "attached_acr_id_map" {
   description = "Azure Container Registry ids that need an authentication mechanism with Azure Kubernetes Service (AKS). Map key must be static string as acr's name, the value is acr's resource id. Changing this forces some new resources to be created."
   nullable    = false
 }
-

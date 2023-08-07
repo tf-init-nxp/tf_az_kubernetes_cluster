@@ -1,104 +1,52 @@
-locals {
-
-  dns_prefix=format("%s-%s",var.product_name,"aks")
-
-  # Abstract if auto_scaler_profile_scale_down_delay_after_delete is not set or null we should use the scan_interval.
-  auto_scaler_profile_scale_down_delay_after_delete = var.auto_scaler_profile_scale_down_delay_after_delete == null ? var.auto_scaler_profile_scan_interval : var.auto_scaler_profile_scale_down_delay_after_delete
-  # automatic upgrades are either:
-  # - null
-  # - patch, but then neither the kubernetes_version nor orchestrator_version must specify a patch number, where orchestrator_version may be also null
-  # - rapid/stable/node-image, but then the kubernetes_version and the orchestrator_version must be null
-
-  #automatic_channel_upgrade_check = var.automatic_channel_upgrade == null ? true : (
-  #  (contains(["patch"], var.automatic_channel_upgrade) && can(regex("^[0-9]{1,}\\.[0-9]{1,}$", var.kubernetes_version)) && (can(regex("^[0-9]{1,}\\.[0-9]{1,}$", var.orchestrator_version)) || var.orchestrator_version == null)) ||
-  #  (contains(["rapid", "stable", "node-image"], var.automatic_channel_upgrade) && var.kubernetes_version == null && var.orchestrator_version == null)
-  #)
-
-  # Abstract the decision whether to create an Analytics Workspace or not.
-  #create_analytics_solution  = var.log_analytics_workspace_enabled && var.log_analytics_solution == null
-  #create_analytics_workspace = var.log_analytics_workspace_enabled && var.log_analytics_workspace == null
-
-  # Abstract the decision whether to use an Analytics Workspace supplied via vars, provision one ourselves or leave it null.
-  # This guarantees that local.log_analytics_workspace will contain a valid `id` and `name` IFF log_analytics_workspace_enabled
-  # is set to `true`.
-
-  #log_analytics_workspace = var.log_analytics_workspace_enabled ? (
-  #  # The Log Analytics Workspace should be enabled:
-  #  var.log_analytics_workspace == null ? {
-  #    # `log_analytics_workspace_enabled` is `true` but `log_analytics_workspace` was not supplied.
-  #    # Create an `azurerm_log_analytics_workspace` resource and use that.
-  #    id   = local.azurerm_log_analytics_workspace_id
-  #    name = local.azurerm_log_analytics_workspace_name
-  #    } : {
-  #    # `log_analytics_workspace` is supplied. Let's use that.
-  #    id   = var.log_analytics_workspace.id
-  #    name = var.log_analytics_workspace.name
-  #  }
-  #) : null # Finally, the Log Analytics Workspace should be disabled.
-
-  #potential_subnet_ids = flatten(concat([
-  #  for pool in var.node_pools : [
-  #    pool.vnet_subnet_id,
-  #    pool.pod_subnet_id
-  #  ]
-  #], [var.vnet_subnet_id]))
-  #subnet_ids = toset([for id in local.potential_subnet_ids : id if id != null])
-
-  # check: example: "dnsPrefix": "concrete-we-pentestjztx4m4wnyiwi"
-
-
-}
-
-
-
 resource "azurerm_kubernetes_cluster" "aks_cluster" {
-  name                                  = coalesce(var.aks_cluster_name, trim("${var.product_name}-aks", "-"))
-  location                              = var.aks_cluster_location
-  resource_group_name                   = var.aks_resource_group_name
-  automatic_channel_upgrade             = var.automatic_channel_upgrade
-  azure_policy_enabled                  = var.azure_policy_enabled
-  disk_encryption_set_id                = var.disk_encryption_set_id
-  dns_prefix                            = local.dns_prefix
-  http_application_routing_enabled      = var.http_application_routing_enabled
-  local_account_disabled                = var.local_account_disabled
-  kubernetes_version                    = var.kubernetes_version
-  node_resource_group                   = var.node_resource_group
-  oidc_issuer_enabled                   = var.oidc_issuer_enabled
-  open_service_mesh_enabled             = var.open_service_mesh_enabled
-  private_cluster_enabled               = var.private_cluster_enabled
-  private_cluster_public_fqdn_enabled   = var.private_cluster_public_fqdn_enabled
-  private_dns_zone_id                   = var.private_dns_zone_id
-  public_network_access_enabled         = var.public_network_access_enabled
-  role_based_access_control_enabled     = var.role_based_access_control_enabled
-  sku_tier                              = var.sku_tier
-  workload_identity_enabled             = var.workload_identity_enabled
+  #name                                  = coalesce(var.aks_cluster_name, trim("${var.product_name}-aks", "-"))
+  name                                = var.aks_cluster_name
+  location                            = var.aks_cluster_location
+  resource_group_name                 = var.aks_resource_group_name
+  automatic_channel_upgrade           = var.automatic_channel_upgrade
+  azure_policy_enabled                = var.azure_policy_enabled
+  disk_encryption_set_id              = var.disk_encryption_set_id
+  dns_prefix                          = local.dns_prefix
+  http_application_routing_enabled    = var.http_application_routing_enabled
+  local_account_disabled              = var.local_account_disabled
+  kubernetes_version                  = var.kubernetes_version
+  node_resource_group                 = var.node_resource_group
+  oidc_issuer_enabled                 = var.oidc_issuer_enabled
+  open_service_mesh_enabled           = var.open_service_mesh_enabled
+  private_cluster_enabled             = var.private_cluster_enabled
+  private_cluster_public_fqdn_enabled = var.private_cluster_public_fqdn_enabled
+  private_dns_zone_id                 = var.private_dns_zone_id
+  public_network_access_enabled       = var.public_network_access_enabled
+  role_based_access_control_enabled   = var.role_based_access_control_enabled
+  sku_tier                            = var.sku_tier
+  workload_identity_enabled           = var.workload_identity_enabled
 
 
   dynamic "default_node_pool" {
     for_each = var.enable_auto_scaling == true ? ["default_node_pool_auto_scaled"] : []
     content {
-      name                              = var.node_pool_name
-      vm_size                           = var.node_pool_vm_size
-      enable_auto_scaling               = var.enable_auto_scaling
-      enable_node_public_ip             = var.enable_node_public_ip
-      max_count                         = var.max_count
-      min_count                         = var.min_count
-      max_pods                          = var.agents_max_pods
-      node_labels                       = var.agents_labels
-      node_taints                       = var.agents_taints
-      orchestrator_version              = var.orchestrator_version
-      os_disk_size_gb                   = var.os_disk_size_gb
-      os_disk_type                      = var.os_disk_type
-      os_sku                            = var.os_sku
-      pod_subnet_id                     = var.pod_subnet_id
-      scale_down_mode                   = var.scale_down_mode
-      temporary_name_for_rotation       = var.temporary_name_for_rotation
-      type                              = var.agents_type
-      ultra_ssd_enabled                 = var.ultra_ssd_enabled
-      vnet_subnet_id                    = var.vnet_subnet_id
-      zones                             = var.agents_availability_zones
-      node_count                        = var.agents_count
-    
+      name                        = var.node_pool_name
+      vm_size                     = var.node_pool_vm_size
+      enable_auto_scaling         = var.enable_auto_scaling
+      enable_node_public_ip       = var.enable_node_public_ip
+      max_count                   = var.max_count
+      min_count                   = var.min_count
+      max_pods                    = var.agents_max_pods
+      node_labels                 = var.agents_labels
+      node_taints                 = var.agents_taints
+      orchestrator_version        = var.orchestrator_version
+      os_disk_size_gb             = var.os_disk_size_gb
+      os_disk_type                = var.os_disk_type
+      os_sku                      = var.os_sku
+      pod_subnet_id               = var.pod_subnet_id
+      scale_down_mode             = var.scale_down_mode
+      temporary_name_for_rotation = var.temporary_name_for_rotation
+      type                        = var.agents_type
+      ultra_ssd_enabled           = var.ultra_ssd_enabled
+      vnet_subnet_id              = var.vnet_subnet_id
+      zones                       = var.agents_availability_zones
+      node_count                  = var.agents_count
+
 
 
       dynamic "kubelet_config" {
@@ -117,7 +65,7 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
           topology_manager_policy   = kubelet_config.value.topology_manager_policy
         }
       }
-    
+
 
       dynamic "linux_os_config" {
         for_each = var.agents_pool_linux_os_configs
@@ -166,7 +114,7 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
       }
 
       dynamic "upgrade_settings" {
-      for_each = var.agents_pool_max_surge == null ? [] : ["upgrade_settings"]
+        for_each = var.agents_pool_max_surge == null ? [] : ["upgrade_settings"]
 
         content {
           max_surge = var.agents_pool_max_surge
@@ -182,6 +130,16 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
 
     content {
       subnet_name = var.aci_connector_linux_subnet_name
+    }
+  }
+
+  dynamic "key_vault_secrets_provider" {
+    for_each = var.key_vault_secrets_provider_enabled ? ["key_vault_secrets_provider"] : []
+
+    content {
+      secret_rotation_enabled  = var.key_vault_secrets_provider_enabled
+      secret_rotation_interval = var.secret_rotation_interval
+
     }
   }
 
@@ -343,10 +301,10 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
     }
 
   }
-  
+
   lifecycle {
     create_before_destroy = true
-    ignore_changes = [kubernetes_version]
+    ignore_changes        = [kubernetes_version, default_node_pool[0].node_count]
   }
 
 }
@@ -354,16 +312,8 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
 
 resource "azurerm_role_assignment" "acr" {
   for_each = var.attached_acr_id_map
-
   principal_id                     = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
   scope                            = each.value
   role_definition_name             = "AcrPull"
   skip_service_principal_aad_check = true
 }
-
-
-  
-
-
-
-
